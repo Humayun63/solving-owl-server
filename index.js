@@ -11,7 +11,7 @@ app.use(cors())
 app.use(express.json())
 
 // JWT Verify
-const verifyJWT = (req, res, next) =>{
+const verifyJWT = (req, res, next) => {
     const authorization = req.headers.authorization;
     if (!authorization) {
         return res.status(401).send({ error: true, message: 'unauthorized access' })
@@ -56,30 +56,43 @@ async function run() {
             res.send({ token })
         })
 
+        // Users Related API
+        app.post('/users', async (req, res) => {
+            const user = req.body;
+            const query = { email: user.email }
+
+            const loggedUser = await usersCollection.findOne(query)
+            if (loggedUser) {
+                return res.send({ message: 'Already Exits' })
+            }
+            const result = await usersCollection.insertOne(user)
+            res.send(result)
+        })
+
         // All Problems
         app.get('/all-problems', async (req, res) => {
-            const result = await problemsCollection.find({}, {projection: { title: 1, _id: 1, level: 1 }}).toArray()
+            const result = await problemsCollection.find({}, { projection: { title: 1, _id: 1, level: 1 } }).toArray()
             res.send(result)
         })
 
         // Easy Problems 
         app.get('/easy-problems', async (req, res) => {
             const query = { level: "easy" }
-            const result = await problemsCollection.find(query, {projection: { title: 1, _id: 1, level: 1 }}).toArray()
+            const result = await problemsCollection.find(query, { projection: { title: 1, _id: 1, level: 1 } }).toArray()
             res.send(result)
         })
 
         // Medium Problems 
         app.get('/medium-problems', async (req, res) => {
             const query = { level: "medium" }
-            const result = await problemsCollection.find(query, {projection: { title: 1, _id: 1, level: 1 }}).toArray()
+            const result = await problemsCollection.find(query, { projection: { title: 1, _id: 1, level: 1 } }).toArray()
             res.send(result)
         })
 
         // Advance Problems 
         app.get('/advance-problems', async (req, res) => {
             const query = { level: "advance" }
-            const result = await problemsCollection.find(query, {projection: { title: 1, _id: 1, level: 1 }}).toArray()
+            const result = await problemsCollection.find(query, { projection: { title: 1, _id: 1, level: 1 } }).toArray()
             res.send(result)
         })
 
