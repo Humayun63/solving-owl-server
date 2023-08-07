@@ -2,12 +2,31 @@ const express = require('express');
 const app = express()
 require('dotenv').config()
 const cors = require('cors');
+const jwt = require('jsonwebtoken')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const port = process.env.PORT || 5000;
 
 // middleware
 app.use(cors())
 app.use(express.json())
+
+// JWT Verify
+const verifyJWT = (req, res, next) =>{
+    const authorization = req.headers.authorization;
+    if (!authorization) {
+        return res.status(401).send({ error: true, message: 'unauthorized access' })
+    }
+
+    const token = authorization.split(' ')[1]
+
+    jwt.verify(token, process.env.ACCESS_KEY, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ error: true, message: 'unauthorized access' })
+        }
+        req.decoded = decoded;
+        next()
+    })
+}
 
 
 // mongoDB
@@ -28,31 +47,39 @@ async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
         const problemsCollection = client.db('solvingOwl').collection('problems')
+        const usersCollection = client.db('solvingOwl').collection('users')
+
+        // Create JWT Token
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_KEY, { expiresIn: '1h' })
+            res.send({ token })
+        })
 
         // All Problems
         app.get('/all-problems', async (req, res) => {
-            const result = await problemsCollection.find({}, {projection: { title: 1, _id: 1 }}).toArray()
+            const result = await problemsCollection.find({}, {projection: { title: 1, _id: 1, level: 1 }}).toArray()
             res.send(result)
         })
 
         // Easy Problems 
         app.get('/easy-problems', async (req, res) => {
             const query = { level: "easy" }
-            const result = await problemsCollection.find(query).toArray()
+            const result = await problemsCollection.find(query, {projection: { title: 1, _id: 1, level: 1 }}).toArray()
             res.send(result)
         })
 
         // Medium Problems 
         app.get('/medium-problems', async (req, res) => {
             const query = { level: "medium" }
-            const result = await problemsCollection.find(query).toArray()
+            const result = await problemsCollection.find(query, {projection: { title: 1, _id: 1, level: 1 }}).toArray()
             res.send(result)
         })
 
         // Advance Problems 
         app.get('/advance-problems', async (req, res) => {
             const query = { level: "advance" }
-            const result = await problemsCollection.find(query).toArray()
+            const result = await problemsCollection.find(query, {projection: { title: 1, _id: 1, level: 1 }}).toArray()
             res.send(result)
         })
 
