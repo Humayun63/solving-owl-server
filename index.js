@@ -69,10 +69,10 @@ async function run() {
             res.send(result)
         })
 
-        // Add solved id to users collection
-        app.patch('/user/solved', verifyJWT, async(req, res)=>{
-            const {email, problemId} = req.body;
-            const query = {email: email}
+        // Single User details
+        app.get('/users/single-user', verifyJWT, async (req, res) => {
+            const { email } = req.body;
+            const query = { email: email }
 
             if (!email) {
                 res.send([])
@@ -84,20 +84,43 @@ async function run() {
             }
 
             const user = await usersCollection.findOne(query)
-            if(!user){
-                return res.status(404).send({error:true, message: 'User not found'})
-            }
-            
-            if(!user.solved){
-                user.solved = [problemId]
-            }else if(user.solved.includes(problemId)){
-                return res.send({message: 'Already Solved'})
+            if (!user) {
+                return res.status(404).send({ error: true, message: 'User not found' })
             }else{
+                res.send(user)
+            }
+
+        })
+
+        // Add solved id to users collection
+        app.patch('/user/solved', verifyJWT, async (req, res) => {
+            const { email, problemId } = req.body;
+            const query = { email: email }
+
+            if (!email) {
+                res.send([])
+            }
+
+            const decodedEmail = req.decoded.email
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'Forbidden Access' })
+            }
+
+            const user = await usersCollection.findOne(query)
+            if (!user) {
+                return res.status(404).send({ error: true, message: 'User not found' })
+            }
+
+            if (!user.solved) {
+                user.solved = [problemId]
+            } else if (user.solved.includes(problemId)) {
+                return res.send({ message: 'Already Solved' })
+            } else {
                 user.solved.push(problemId)
             }
 
-            const result =  await usersCollection.updateOne(query, {
-                $set:{
+            const result = await usersCollection.updateOne(query, {
+                $set: {
                     solved: user.solved
                 }
             })
