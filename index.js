@@ -69,6 +69,42 @@ async function run() {
             res.send(result)
         })
 
+        // Add solved id to users collection
+        app.patch('/user/solved', verifyJWT, async(req, res)=>{
+            const {email, problemId} = req.body;
+            const query = {email: email}
+
+            if (!email) {
+                res.send([])
+            }
+
+            const decodedEmail = req.decoded.email
+            if (email !== decodedEmail) {
+                return res.status(403).send({ error: true, message: 'Forbidden Access' })
+            }
+
+            const user = await usersCollection.findOne(query)
+            if(!user){
+                return res.status(404).send({error:true, message: 'User not found'})
+            }
+            
+            if(!user.solved){
+                user.solved = [problemId]
+            }else if(user.solved.includes(problemId)){
+                return res.send({message: 'Already Solved'})
+            }else{
+                user.solved.push(problemId)
+            }
+
+            const result =  await usersCollection.updateOne(query, {
+                $set:{
+                    solved: user.solved
+                }
+            })
+
+            res.send(result)
+        })
+
         // All Problems
         app.get('/all-problems', async (req, res) => {
             const result = await problemsCollection.find({}, { projection: { title: 1, _id: 1, level: 1 } }).toArray()
